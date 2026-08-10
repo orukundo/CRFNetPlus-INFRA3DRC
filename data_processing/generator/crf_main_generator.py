@@ -1,3 +1,17 @@
+# =============================================================================
+# CRF-Net+ for INFRA-3DRC
+#
+# Original implementation: CRF-Net authors/contributors
+# INFRA-3DRC adaptation and modifications: Olivier Rukundo, Ph.D.
+# Affiliation: University of Limerick, Ireland
+#
+# Description:
+# Generator configuration adapted to support training, validation, and testing
+# of CRF-Net+ with the INFRA-3DRC automotive perception dataset.
+#
+# See the repository README and original CRF-Net license for attribution.
+# =============================================================================
+
 from crfnet.utils.transform import random_transform_generator
 from crfnet.utils.anchor_parameters import AnchorParameters
 from crfnet.data_processing.generator.splits.nuscenes_splits import Scenes
@@ -188,9 +202,10 @@ def create_generators(cfg, backbone):
       **eval_args
     )
 
-    test_night_generator = test_generator
-    test_rain_generator = test_generator
-
-    return train_generator, validation_generator, test_generator, test_night_generator, test_rain_generator
+    # INFRA-3DRC currently uses the main test split only.
+    # Do not create legacy nuScenes-style night/rain placeholders, because
+    # those would simply duplicate the same test set and produce misleading
+    # repeated metrics.
+    return train_generator, validation_generator, test_generator
   else:
     raise ValueError('Invalid data type received: {}'.format(cfg.data_set))
