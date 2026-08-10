@@ -64,3 +64,17 @@ INFRA-3DRC is provided by Fraunhofer IVI.
 ## License
 
 This repository contains code derived from CRF-Net. Please refer to the included license and the original CRF-Net licensing terms.
+
+## Results
+
+CRF-Net+ was trained and evaluated on all 25 INFRA-3DRC scenes.
+
+| mAP | Precision | Recall |
+|---:|---:|---:|
+| 0.9684 | 0.9968 | 0.5080 |
+
+## Evaluation Demo
+
+The video below shows sequential object-detection outputs generated during evaluation.
+
+https://github.com/user-attachments/assets/9de1dd8d-dacb-43aa-a97d-150db9765257
