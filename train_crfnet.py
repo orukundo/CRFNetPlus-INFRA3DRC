@@ -235,7 +235,7 @@ def create_callbacks(model, prediction_model, validation_generator, cfg):
     evaluation = RedirectModel(evaluation, prediction_model)
     callbacks.append(evaluation)
 
-    # CRF-Net++: record every epoch to CSV after evaluation has inserted mAP.
+    # CRF-Net+: record every epoch to CSV after evaluation has inserted mAP.
     csv_logger = keras.callbacks.CSVLogger(
         os.path.join(cfg.results_dir, "history.csv"),
         separator=",",
@@ -243,7 +243,7 @@ def create_callbacks(model, prediction_model, validation_generator, cfg):
     )
     callbacks.append(csv_logger)
 
-    # CRF-Net++: generate loss and mAP figures at training end.
+    # CRF-Net+: generate loss and mAP figures at training end.
     callbacks.append(TrainingReportCallback(cfg.results_dir))
 
     # save the model
@@ -296,7 +296,7 @@ def main():
     model_name = model_name.split('.')[0]
     cfg.model_name = cfg.runtime + "_" + model_name
 
-    # CRF-Net++ experiment output directory.
+    # CRF-Net+ experiment output directory.
     cfg.results_dir = os.path.join(".", "results", cfg.model_name)
     makedirs(cfg.results_dir)
 
@@ -319,8 +319,28 @@ def main():
     get_session(cfg.gpu_mem_usage)
 
     # create the generators
-    if 'nuscenes' in cfg.data_set or 'infra3drc' in cfg.data_set:
+    if 'nuscenes' in cfg.data_set:
         train_generator, validation_generator, test_generator, test_night_generator, test_rain_generator = create_generators(cfg, backbone)
+
+    elif 'infra3drc' in cfg.data_set:
+        # INFRA-3DRC uses the main test set only. Some adapter versions still
+        # return legacy night/rain generator placeholders inherited from the
+        # nuScenes-oriented CRF-Net pipeline, so accept either 3 or 5 outputs.
+        generators = create_generators(cfg, backbone)
+
+        if len(generators) == 5:
+            train_generator, validation_generator, test_generator, _, _ = generators
+        elif len(generators) == 3:
+            train_generator, validation_generator, test_generator = generators
+        else:
+            raise ValueError(
+                "INFRA-3DRC create_generators() must return 3 or 5 generators; "
+                "received {}.".format(len(generators))
+            )
+
+        test_night_generator = None
+        test_rain_generator = None
+
     else:
         train_generator, validation_generator = create_generators(cfg, backbone)
     
@@ -430,15 +450,46 @@ def main():
 
     # Evaluate
     from .utils.eval_test import evaluate_test_set
-    evaluate_test_set(best_prediction_model, test_generator, cfg, mode='all', tensorboard=callbacks[1], verbose=1)
-    print("="*60)
-    print("\t##### Evaluate Test Set at Night #####")
-    print("="*60)
-    evaluate_test_set(best_prediction_model, test_night_generator, cfg, mode='night', tensorboard=callbacks[1], verbose=1)
-    print("="*60)
-    print("\t##### Evaluate Test Set at Rain #####")
-    print("="*60)
-    evaluate_test_set(best_prediction_model, test_rain_generator, cfg, mode='rain', tensorboard=callbacks[1], verbose=1)
+
+    # Main test-set evaluation.
+    evaluate_test_set(
+        best_prediction_model,
+        test_generator,
+        cfg,
+        mode='all',
+        tensorboard=callbacks[1],
+        verbose=1,
+    )
+
+    # Night/rain evaluation is retained only for nuScenes. It is intentionally
+    # disabled for INFRA-3DRC because no verified rain subset is implemented,
+    # and the previous placeholders produced duplicate all/night/rain results.
+    if 'nuscenes' in cfg.data_set:
+        if test_night_generator is not None:
+            print("="*60)
+            print("\t##### Evaluate Test Set at Night #####")
+            print("="*60)
+            evaluate_test_set(
+                best_prediction_model,
+                test_night_generator,
+                cfg,
+                mode='night',
+                tensorboard=callbacks[1],
+                verbose=1,
+            )
+
+        if test_rain_generator is not None:
+            print("="*60)
+            print("\t##### Evaluate Test Set at Rain #####")
+            print("="*60)
+            evaluate_test_set(
+                best_prediction_model,
+                test_rain_generator,
+                cfg,
+                mode='rain',
+                tensorboard=callbacks[1],
+                verbose=1,
+            )
 
     print("="*60)
     print("\t######## Finished successfully ########")
