@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
 # =============================================================================
-# CRF-Net - INFRA-3DRC Adaptation
+# CRF-Net+ for INFRA-3DRC
 #
 # Original implementation: CRF-Net authors/contributors
-# INFRA-3DRC modifications: Olivier Rukundo
+# INFRA-3DRC adaptation and modifications: Olivier Rukundo, Ph.D.
 # Affiliation: University of Limerick, Ireland
 #
-# This file contains modifications made for training/evaluating CRF-Net
-# with the INFRA-3DRC automotive perception dataset.
+# Description:
+# Training and evaluation of CRF-Net adapted to the INFRA-3DRC
+# automotive perception dataset.
 #
 # See the repository README and original CRF-Net license for attribution.
 # =============================================================================
