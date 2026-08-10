@@ -1,4 +1,16 @@
+
 # -*- coding: utf-8 -*-
+# =============================================================================
+# CRF-Net++ for INFRA-3DRC - Evaluation Reporting
+#
+# Author: Olivier Rukundo
+# Affiliation: University of Limerick, Ireland
+#
+# Description:
+# Automated evaluation and reporting utilities for the INFRA-3DRC
+# implementation, including metrics, per-class AP, confusion matrices,
+# prediction exports, ground-truth exports, and evaluation visualizations.
+# =============================================================================
 """
 CRF-Net++ evaluation/reporting utilities.
 
