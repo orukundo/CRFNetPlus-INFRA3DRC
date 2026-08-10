@@ -57,7 +57,7 @@ University of Limerick, Ireland
 
 This repository is based on the original CRF-Net camera-radar fusion framework. Original CRF-Net authors/contributors retain authorship of the original implementation.
 
-The INFRA-3DRC integration, dataset-specific modifications, and additional evaluation/reporting functionality were developed by Olivier Rukundo.
+The INFRA-3DRC integration, dataset-specific modifications, and additional functionalities were developed by [Dr Olivier Rukundo](https://www.ul.ie/scieng/schools-and-departments/department-electronic-and-computer-engineering/dr-olivier-rukundo).
 
 INFRA-3DRC is provided by Fraunhofer IVI.
 
