@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 
+# =============================================================================
+# CRF-Net - INFRA-3DRC Adaptation
+#
+# Original implementation: CRF-Net authors/contributors
+# INFRA-3DRC modifications: Olivier Rukundo
+# Affiliation: University of Limerick, Ireland
+#
+# This file contains modifications made for training/evaluating CRF-Net
+# with the INFRA-3DRC automotive perception dataset.
+#
+# See the repository README and original CRF-Net license for attribution.
+# =============================================================================
+
 """
 Main script for CRF-Net Training with online evaluation outputs a model with weights and tensorboard logs.
 
