@@ -77,5 +77,7 @@ CRF-Net+ was trained and evaluated on all 25 INFRA-3DRC scenes.
 
 The video below shows sequential object-detection outputs generated during evaluation.
 
-https://github.com/user-attachments/assets/ecdc153c-ae4d-4272-9dce-98476dec615c
+https://github.com/user-attachments/assets/e030da2b-54d3-44cd-b99d-498ecc0c8781
+
+
 
