@@ -112,10 +112,10 @@ if __name__ == '__main__':
             anchor_params = None
             num_anchors   = None
 
-        prediction_model = retinanet_bbox(model=model, anchor_params=anchor_params, class_specific_filter=False)
+        prediction_model = retinanet_bbox(model=model, anchor_params=anchor_params, class_specific_filter=True, nms_threshold=0.3)
         
         all_detections = _get_detections(test_generator, prediction_model, distance=cfg.distance_detection, 
-            score_threshold=score_threshold, max_detections=100, save_path=None, render=args.render,
+            score_threshold=score_threshold, max_detections=100, save_path="./evaluation_prediction_images", render=args.render,
             distance_scale=100, workers=cfg.workers, cfg=cfg)
         all_annotations = _get_annotations(test_generator)        
         
