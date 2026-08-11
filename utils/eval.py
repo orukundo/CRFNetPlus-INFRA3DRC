@@ -15,7 +15,7 @@ limitations under the License.
 """
 
 from .anchor_calc import compute_overlap
-from .visualization import draw_detections, draw_annotations
+from .visualization import draw_detections, draw_annotations, visualize_predictions
 from crfnet.data_processing.fusion.fusion_projection_lines import create_imagep_visualization
 import keras
 import numpy as np
@@ -127,8 +127,18 @@ def _get_detections(generator, model, distance=False, score_threshold=0.05, max_
         # Create Visualization
         if save_path or render:
             viz_image = create_imagep_visualization(raw_image, cfg=cfg)
-            #draw_annotations(viz_image, generator.load_annotations(i), label_to_name=generator.label_to_name) # Draw annotations
-            draw_detections(viz_image, image_boxes, image_scores, image_labels,score_threshold=0.3, label_to_name=generator.label_to_name) # Draw detections
+            # draw_detections(viz_image, image_boxes, image_scores, image_labels,score_threshold=0.3, label_to_name=generator.label_to_name) # Draw detections
+            
+            visualize_predictions(
+                [np.expand_dims(image_boxes, axis=0),
+                 np.expand_dims(image_scores, axis=0),
+                 np.expand_dims(image_labels, axis=0)],
+                viz_image,
+                generator,
+                dist=False,
+                verbose=False,
+                cfg=cfg
+            )
         
         if render:
             # Show 
