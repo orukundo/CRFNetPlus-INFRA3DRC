@@ -447,7 +447,7 @@ def main():
     else:
         anchor_params = None
 
-    best_prediction_model = retinanet_bbox(model=best_model, anchor_params=anchor_params, class_specific_filter=False)
+    best_prediction_model = retinanet_bbox(model=best_model, anchor_params=anchor_params, class_specific_filter=True, nms_threshold=0.3)
 
     # Evaluate
     from .utils.eval_test import evaluate_test_set
@@ -498,4 +498,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
