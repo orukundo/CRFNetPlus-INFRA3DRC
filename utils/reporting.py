@@ -234,26 +234,77 @@ def _safe_image_for_drawing(generator, image_index):
     return image.copy()
 
 
-def _draw_box(image, box, text, thickness=2):
+def _draw_box(image, box, text, thickness=1):
+    """Draw a red prediction box with a black label background and white text."""
     x1, y1, x2, y2 = [int(round(float(v))) for v in box]
     h, w = image.shape[:2]
+
     x1 = max(0, min(w - 1, x1))
     x2 = max(0, min(w - 1, x2))
     y1 = max(0, min(h - 1, y1))
     y2 = max(0, min(h - 1, y2))
 
-    cv2.rectangle(image, (x1, y1), (x2, y2), (255, 255, 255), thickness)
-    cv2.putText(
+    # Red prediction bounding box (OpenCV uses BGR ordering).
+    box_color = (0, 0, 255)
+    cv2.rectangle(
         image,
-        text,
-        (x1, max(15, y1 - 5)),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.45,
-        (255, 255, 255),
-        1,
+        (x1, y1),
+        (x2, y2),
+        box_color,
+        thickness,
         cv2.LINE_AA,
     )
 
+    # Label appearance.
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.45
+    font_thickness = 1
+    padding = 3
+
+    (text_width, text_height), baseline = cv2.getTextSize(
+        text,
+        font,
+        font_scale,
+        font_thickness,
+    )
+
+    label_width = text_width + 2 * padding
+    label_height = text_height + baseline + 2 * padding
+
+    # Prefer the label above the box. If there is no room, place it inside
+    # the top edge of the box.
+    label_x1 = x1
+    label_x2 = min(w - 1, label_x1 + label_width)
+
+    if y1 - label_height >= 0:
+        label_y1 = y1 - label_height
+        label_y2 = y1
+    else:
+        label_y1 = y1
+        label_y2 = min(h - 1, y1 + label_height)
+
+    # Black label background.
+    cv2.rectangle(
+        image,
+        (label_x1, label_y1),
+        (label_x2, label_y2),
+        (0, 0, 0),
+        -1,
+    )
+
+    # White label text.
+    text_x = label_x1 + padding
+    text_y = label_y2 - baseline - padding
+    cv2.putText(
+        image,
+        text,
+        (text_x, text_y),
+        font,
+        font_scale,
+        (255, 255, 255),
+        font_thickness,
+        cv2.LINE_AA,
+    )
 
 def _plot_confusion_matrix(matrix, labels, path, normalized=False):
     try:
@@ -462,23 +513,24 @@ def generate_detection_report(
                 "match_iou": float(match_iou),
             })
 
-        # Prediction image: GT prefixed "GT", predictions prefixed "P".
+        # Prediction image: predicted detections only.
         image = _safe_image_for_drawing(generator, image_index)
 
-        for box, label in zip(gt_boxes, gt_labels):
-            class_name = generator.label_to_name(int(label))
-            if class_name != "bg":
-                _draw_box(image, box, "GT:{}".format(class_name), thickness=1)
-
         for box, score, label in zip(pred_boxes, pred_scores, pred_labels):
+            class_name = generator.label_to_name(int(label))
+
+            # Display confidence score first, followed by the predicted class.
+            # Example: "0.98: Car"
+            text = "{:.2f}: {}".format(
+                float(score),
+                class_name.capitalize(),
+            )
+
             _draw_box(
                 image,
                 box,
-                "P:{} {:.2f}".format(
-                    generator.label_to_name(int(label)),
-                    float(score),
-                ),
-                thickness=2,
+                text,
+                thickness=1,
             )
 
         cv2.imwrite(
