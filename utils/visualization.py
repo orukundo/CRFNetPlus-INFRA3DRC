@@ -25,48 +25,134 @@ import pprint
 
 def visualize_predictions(predictions, image_data_vis, generator, dist=False, verbose=False, cfg=None):
     """
-    Visualizes the predictions as bounding boxes with distances or confidence score in a given image.
+    Visualizes predictions as bounding boxes with readable, collision-aware labels.
 
-    :param predictions:         <list>              List with [bboxes, probs, labels]
-    :param image_data_vis:      <np.array>          Image where the predictions should be visualized
-    :param generator:           <Generator>         Data generator used for name to label mapping
-    :dist:                      <bool>              True if distance detection is enabled
-    :verbose:                   <bool>              True if detetions should be printed 
-
+    Detector outputs are unchanged; only caption placement is improved.
     """
-    
-    font                   = cv2.FONT_HERSHEY_SIMPLEX
-    fontScale              = 0.4
 
-    # Visualization prediction
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_scale = 0.4
+    font_thickness = 1
+    box_thickness = 2
+    padding = 2
+    vertical_gap = 2
+
     all_dets = []
     [bboxes, probs, labels] = predictions
 
+    image_h, image_w = image_data_vis.shape[:2]
+    occupied_label_boxes = []
 
+    def overlaps(a, b):
+        return not (
+            a[2] <= b[0] or a[0] >= b[2] or
+            a[3] <= b[1] or a[1] >= b[3]
+        )
+
+    def find_label_position(box_x1, box_y1, text_w, text_h, baseline):
+        label_w = text_w + 2 * padding
+        label_h = text_h + baseline + 2 * padding
+
+        x = int(round(box_x1))
+        x = max(0, min(image_w - label_w, x))
+
+        preferred_top = int(round(box_y1)) - label_h - vertical_gap
+        candidate_tops = []
+
+        for k in range(8):
+            candidate_tops.append(preferred_top - k * (label_h + vertical_gap))
+
+        below_start = int(round(box_y1)) + vertical_gap
+        for k in range(8):
+            candidate_tops.append(below_start + k * (label_h + vertical_gap))
+
+        for top in candidate_tops:
+            top = max(0, min(image_h - label_h, top))
+            candidate = [x, top, x + label_w, top + label_h]
+            if not any(overlaps(candidate, used) for used in occupied_label_boxes):
+                occupied_label_boxes.append(candidate)
+                return candidate
+
+        top = max(0, min(image_h - label_h, preferred_top))
+        candidate = [x, top, x + label_w, top + label_h]
+        occupied_label_boxes.append(candidate)
+        return candidate
 
     for jk in range(bboxes.shape[1]):
-        (x1, y1, x2, y2) = bboxes[0,jk,:]
-        
-        key = generator.label_to_name(labels[0,jk])
-        color = tum_colors[key] *255
-        cv2.rectangle(image_data_vis,(x1, y1), (x2, y2), color,2)
+        x1, y1, x2, y2 = bboxes[0, jk, :]
+        x1, y1, x2, y2 = [int(round(float(v))) for v in (x1, y1, x2, y2)]
+
+        x1 = max(0, min(image_w - 1, x1))
+        x2 = max(0, min(image_w - 1, x2))
+        y1 = max(0, min(image_h - 1, y1))
+        y2 = max(0, min(image_h - 1, y2))
+
+        key = generator.label_to_name(labels[0, jk])
+        color = tuple(int(v) for v in (tum_colors[key] * 255))
+
+        cv2.rectangle(
+            image_data_vis,
+            (x1, y1),
+            (x2, y2),
+            color,
+            box_thickness,
+            cv2.LINE_AA,
+        )
 
         if dist is not False:
-            textLabel = '{0}: {1:3.1f} {2}'.format(key.split('.', 1)[-1], dist[0,jk], 'm')
-            all_dets.append((key,100*probs[0,jk], dist[0,jk]))
+            text_label = "{0}: {1:3.1f} {2}".format(
+                key.split(".", 1)[-1],
+                dist[0, jk],
+                "m",
+            )
+            all_dets.append((key, 100 * probs[0, jk], dist[0, jk]))
         else:
-            textLabel = '{}: {}'.format(key.split('.', 1)[-1],int(100*probs[0,jk]))
-            all_dets.append((key,100*probs[0,jk]))
+            text_label = "{}: {:.2f}".format(
+                key.split(".", 1)[-1],
+                float(probs[0, jk]),
+            )
+            all_dets.append((key, 100 * probs[0, jk]))
 
-        (retval,baseLine) = cv2.getTextSize(textLabel, font, fontScale,1)
+        (text_w, text_h), baseline = cv2.getTextSize(
+            text_label,
+            font,
+            font_scale,
+            font_thickness,
+        )
 
-        textOrg = int(x1), int(y1)
+        lx1, ly1, lx2, ly2 = find_label_position(
+            x1,
+            y1,
+            text_w,
+            text_h,
+            baseline,
+        )
 
-        cv2.rectangle(image_data_vis, (textOrg[0] - 1,textOrg[1]+baseLine - 1), (textOrg[0]+retval[0] + 1, textOrg[1]-retval[1] - 1), color, -1)
-        cv2.putText(image_data_vis, textLabel, textOrg, cv2.FONT_HERSHEY_SIMPLEX, fontScale, (1,1,1), 1)
-    
-    if verbose: pprint.pprint(all_dets)
-    
+        cv2.rectangle(
+            image_data_vis,
+            (lx1, ly1),
+            (lx2, ly2),
+            color,
+            -1,
+        )
+
+        text_x = lx1 + padding
+        text_y = ly2 - baseline - padding
+
+        cv2.putText(
+            image_data_vis,
+            text_label,
+            (text_x, text_y),
+            font,
+            font_scale,
+            (255, 255, 255),
+            font_thickness,
+            cv2.LINE_AA,
+        )
+
+    if verbose:
+        pprint.pprint(all_dets)
+
     return image_data_vis
 
 def draw_box(image, box, color, thickness=2):
@@ -83,17 +169,43 @@ def draw_box(image, box, color, thickness=2):
 
 
 def draw_caption(image, box, caption):
-    """ Draws a caption above the box in an image.
-
-    # Arguments
-        image   : The image to draw on.
-        box     : A list of 4 elements (x1, y1, x2, y2).
-        caption : String containing the text to draw.
-    """
+    """Draw a readable caption near a bounding box."""
     b = np.array(box).astype(int)
-    cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0), 2)
-    cv2.putText(image, caption, (b[0], b[1] - 10), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+    h, w = image.shape[:2]
 
+    font = cv2.FONT_HERSHEY_PLAIN
+    font_scale = 1
+    thickness = 1
+    padding = 2
+
+    (text_w, text_h), baseline = cv2.getTextSize(
+        caption, font, font_scale, thickness
+    )
+
+    label_w = text_w + 2 * padding
+    label_h = text_h + baseline + 2 * padding
+
+    x1 = max(0, min(w - label_w, b[0]))
+    y1 = b[1] - label_h - 2
+
+    if y1 < 0:
+        y1 = max(0, min(h - label_h, b[1] + 2))
+
+    x2 = min(w - 1, x1 + label_w)
+    y2 = min(h - 1, y1 + label_h)
+
+    cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 0), -1)
+
+    cv2.putText(
+        image,
+        caption,
+        (x1 + padding, y2 - baseline - padding),
+        font,
+        font_scale,
+        (255, 255, 255),
+        thickness,
+        cv2.LINE_AA,
+    )
 
 def draw_boxes(image, boxes, color, thickness=2):
     """ Draws boxes on an image with a given color.
