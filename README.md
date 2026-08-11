@@ -71,7 +71,7 @@ CRF-Net+ was trained and evaluated on all 25 INFRA-3DRC scenes.
 
 | mAP | Precision | Recall |
 |---:|---:|---:|
-| 0.9684 | 0.9968 | 0.5080 |
+| 0.9675 | 0.9956 | 0.5336 |
 
 ## Evaluation Demo
 
